@@ -1,6 +1,5 @@
 @import 'mixins';
 @import 'variables';
-@import 'functions';
 @import 'smart-grid';
 
 html{
@@ -36,10 +35,4 @@ body {
   @include container();
   max-width: rem-calc(1440);
   height: 100%;
-}
-
-.block {
-  width: 200px;
-  height: 400px;
-  background: green;
 }
