@@ -14,12 +14,11 @@ const gulp = require('gulp'),
     uglify = require('gulp-uglify'),
     babel = require('gulp-babel'),
     imgmin = require('gulp-tinypng-nokey'),
-    newer = require('gulp-newer'),
     svgSprite = require('gulp-svg-sprite'),
     svgmin = require('gulp-svgmin'),
     cheerio = require('gulp-cheerio'),
     replace = require('gulp-replace'),
-    browserSync = require('browser-sync'),
+    browserSync = require('browser-sync').create(),
     smartGrid = require('smart-grid'),
     webp = require('gulp-webp');
 
@@ -38,7 +37,7 @@ const paths = {
     css: {
         src: './src/styles/main.scss',
         dest: './build/wp-content/themes/twentytwenty-child/css',
-        watch: ['./src/blocks/**/*.scss', './src/sections/**/*.scss', './src/styles/**/*.scss', './src/css-libraries/**/*', '!./src/css-plugins/**/*']
+        watch: ['./src/blocks/**/*.scss', './src/sections/**/*.scss', './src/styles/**/*.scss', './src/css-libraries/**/*', '!./src/css-plugins/**/*', '/build/wp-content/themes/twentytwenty-child/css/*.css']
     },
     cssPlugins: {
         src: './src/css-plugins/**/*',
@@ -176,9 +175,6 @@ gulp.task('html', () => {
         //    collapseWhitespace: true
         //}))
         .pipe(gulp.dest(paths.html.dest))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
 });
 
 /* SCSS TO CSS CONVERTATION & MINIFICATION */
@@ -198,9 +194,7 @@ gulp.task('styles', () => {
         //.pipe(sourcemaps.write())
         .pipe(rename('main.min.css'))
         .pipe(gulp.dest(paths.css.dest))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
+        .pipe(browserSync.stream())
 });
 
 /* CSS PLUGINS MOVING TO BUILD */
@@ -210,9 +204,6 @@ gulp.task('cssPlugins', () => {
         .pipe(plumber())
         .pipe(csso())
         .pipe(gulp.dest(paths.cssPlugins.dest))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
 });
 
 /* JAVASCRIPT BABEL & MINIFICATION */
@@ -234,9 +225,6 @@ gulp.task('scripts', () => {
         //.pipe(sourcemaps.write())
         .pipe(rename('main.min.js'))
         .pipe(gulp.dest(paths.js.dest))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
 });
 
 /* JAVASCRIPT & QJUERY PLUGINS MOVING TO BUILD */
@@ -245,9 +233,6 @@ gulp.task('jsPlugins', () => {
     return gulp.src(paths.jsPlugins.src)
         .pipe(plumber())
         .pipe(gulp.dest(paths.jsPlugins.dest))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
 });
 
 /* IMAGES MINIFICATION */
@@ -255,12 +240,8 @@ gulp.task('jsPlugins', () => {
 gulp.task('imgmin', () => {
     return gulp.src(paths.images.src)
         .pipe(plumber())
-        .pipe(newer(paths.images.dest))
-        .pipe(imgmin())
+        // .pipe(imgmin())
         .pipe(gulp.dest(paths.images.dest))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
 });
 
 /* IMAGES JPG/JPEG & PNG TO WEBP CONVERTATION */
@@ -270,10 +251,15 @@ gulp.task('webp', () => {
         .pipe(plumber())
         .pipe(webp())
         .pipe(gulp.dest(paths.images.dest))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
 });
+
+/* WEBP IMAGES MOVING TO BUILD */
+
+// gulp.task('webpImages', () => {
+//     return gulp.src(paths.webpImages.src)
+//         .pipe(plumber())
+//         .pipe(gulp.dest(paths.images.dest))
+// });
 
 /* SVG SPRITES */
 
@@ -304,9 +290,6 @@ gulp.task('sprites', () => {
             }
         }))
         .pipe(gulp.dest(paths.svgSprite.dest))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
 });
 
 /* SVG MINIFICATION */
@@ -320,9 +303,6 @@ gulp.task('svg', () => {
             }
         }))
         .pipe(gulp.dest(paths.svg.dest))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
 });
 
 /* FONTS MOVING TO BUILD */
@@ -331,9 +311,6 @@ gulp.task('fonts', () => {
     return gulp.src(paths.fonts.src)
         .pipe(plumber())
         .pipe(gulp.dest(paths.fonts.dest))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
 });
 
 /* PHP MOVING TO BUILD */
@@ -342,9 +319,6 @@ gulp.task('php', () => {
     return gulp.src(paths.php.src)
         .pipe(plumber())
         .pipe(gulp.dest(paths.php.dest))
-        .pipe(browserSync.reload({
-            stream: true
-        }));
 });
 
 /* BUILD FOLDER ERASE */
@@ -355,6 +329,11 @@ gulp.task('clean', () => {
 
 /* BROWSER SYNC */
 
+function reload(done) {
+  browserSync.reload({ stream: true });
+  done();
+}
+
 gulp.task('server', () => {
     browserSync.init({
         server: {
@@ -362,18 +341,18 @@ gulp.task('server', () => {
         },
         reloadOnRestart: true
     });
-    gulp.watch(paths.html.watch, gulp.parallel('html'));
-    gulp.watch(paths.css.watch, gulp.parallel('styles'));
-    gulp.watch(paths.css.watch, gulp.parallel).on('change', browserSync.reload);
-    gulp.watch(paths.cssPlugins.watch, gulp.parallel('cssPlugins'));
-    gulp.watch(paths.js.watch, gulp.parallel('scripts'));
-    gulp.watch(paths.jsPlugins.watch, gulp.parallel('jsPlugins'));
-    gulp.watch(paths.images.watch, gulp.parallel('imgmin'));
-    gulp.watch(paths.images.watch, gulp.parallel('webp'));
-    gulp.watch(paths.svgSprite.watch, gulp.parallel('sprites'));
-    gulp.watch(paths.svg.watch, gulp.parallel('svg'));
-    gulp.watch(paths.fonts.watch, gulp.parallel('fonts'));
-    gulp.watch(paths.php.watch, gulp.parallel('php'));
+    gulp.watch(paths.html.watch, gulp.series('html', reload));
+    gulp.watch(paths.css.watch, gulp.series('styles', reload))
+    gulp.watch(paths.cssPlugins.watch, gulp.series('cssPlugins', reload));
+    gulp.watch(paths.js.watch, gulp.series('scripts', reload));
+    gulp.watch(paths.jsPlugins.watch, gulp.series('jsPlugins', reload));
+    gulp.watch(paths.images.watch, gulp.series('imgmin', reload));
+    gulp.watch(paths.images.watch, gulp.series('webp', reload));
+    // gulp.watch(paths.webpImages.watch, gulp.series('webpImages', reload));
+    gulp.watch(paths.svgSprite.watch, gulp.series('sprites', reload));
+    gulp.watch(paths.svg.watch, gulp.series('svg', reload));
+    gulp.watch(paths.fonts.watch, gulp.series('fonts', reload));
+    gulp.watch(paths.php.watch, gulp.series('php', reload));
 });
 
 /* PROJECT TASK BUILD QUEUE */
@@ -387,6 +366,7 @@ gulp.task('build', gulp.series(
     'jsPlugins',
     'imgmin',
     'webp',
+    // 'webpImages',
     'sprites',
     'svg',
     'fonts',
