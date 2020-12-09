@@ -175,6 +175,7 @@ gulp.task('html', () => {
         //    collapseWhitespace: true
         //}))
         .pipe(gulp.dest(paths.html.dest))
+        .pipe(browserSync.stream())
 });
 
 /* SCSS TO CSS CONVERTATION & MINIFICATION */
